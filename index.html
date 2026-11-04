@@ -273,6 +273,14 @@ html,body{height:100vh;height:100dvh}
 .langs button{min-width:42px;min-height:34px;padding:2px 9px;border-radius:9px;background:var(--glass);border:1px solid var(--glassb);color:var(--text);font:700 clamp(.78rem,1.7vmin,1.05rem) system-ui,sans-serif;letter-spacing:.04em}
 .langs button.on{background:var(--c1);color:var(--btn);border-color:transparent}
 </style>
+<style>
+.paper video{max-height:88dvh;max-width:56vw;display:block;border-radius:.4vmin;background:#000}
+#s-edit{flex-direction:row;gap:4vmin}
+#editCv{max-width:100%;max-height:82dvh;border-radius:1.6vmin;box-shadow:0 2vmin 6vmin rgba(0,0,0,.5);background:#000;touch-action:none;cursor:crosshair}
+.chip.stk{font-size:1.5rem;min-width:48px;padding:4px 10px;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
+@media (max-aspect-ratio:1/1){#s-edit{flex-direction:column;gap:2vmin}#s-edit .panel{width:min(94vw,560px)}#editCv{max-height:42dvh}.paper video{max-width:88vw;max-height:48dvh}}
+@media (min-aspect-ratio:1/1){.modes.many{gap:2vmin}.modes.many .mode{width:min(19vw,24vh);min-width:150px;font-size:clamp(1rem,2.3vmin,2rem);gap:1vmin;padding:1.2vmin}}
+</style>
 <style id="pageStyle">@page{margin:0}</style>
 </head>
 <body data-theme="gears">
@@ -312,6 +320,16 @@ html,body{height:100vh;height:100dvh}
   </div>
 </section>
 
+<section class="screen" id="s-edit">
+  <div class="pv"><canvas id="editCv" width="900" height="600"></canvas></div>
+  <div class="panel">
+    <h2 class="title" style="font-size:clamp(1.6rem,4.4vmin,3.2rem);text-align:left">Retouche</h2>
+    <div class="lbl">Autocollants</div><div class="chips" id="stkChips"></div>
+    <div class="row" style="justify-content:flex-start"><button class="btn ghost small" id="editSmall">−</button><button class="btn ghost small" id="editBig">+</button><button class="btn ghost small" id="editDel">Supprimer</button></div>
+    <div class="lbl">Crayon</div><div class="chips" id="penChips"></div>
+    <div class="row" style="justify-content:flex-start;margin-top:1vmin"><button class="btn ghost small" id="editUndo">Annuler le dernier</button><button class="btn" id="editOk">Valider</button></div>
+  </div>
+</section>
 <section class="screen" id="s-shoot">
   <div class="shootbox"><canvas id="shootCv" width="900" height="600"></canvas><div id="count"></div></div>
   <div id="shootMsg"></div>
@@ -319,7 +337,7 @@ html,body{height:100vh;height:100dvh}
 </section>
 
 <section class="screen" id="s-result">
-  <div class="paper"><img id="resImg" alt="Votre photo"></div>
+  <div class="paper"><img id="resImg" alt="Votre photo"><video id="resVid" playsinline muted loop style="display:none"></video></div>
   <div class="acts" id="resActions">
     <h1 class="title" style="font-size:clamp(1.8rem,5vmin,4rem)">C'est dans la boîte</h1>
     <button class="btn" id="btnPrint">Imprimer</button>
@@ -358,7 +376,7 @@ const BUILTIN_FRAMES=['gallery','film','editorial','gold','polaroid','chrome','n
 const FILTER_IDS=['none','bw','vintage','pop','warm','cool','duo','soft','indus'];
 const DEFAULTS={
   name:'Notre soirée', date:new Date().toISOString().slice(0,10), theme:'gears', themeV:0, message:'Merci d\'être venus !', sound:true, lang:'', langPick:true, pin:'', pinHash:'', pinSalt:'', pinLen:4,
-  modes:{single:true,strip:true,gif:true,collage:true,popart:true,duo:true},
+  modes:{single:true,strip:true,gif:true,collage:true,popart:true,duo:true,video:true,slowmo:true,guestbook:true,stickers:true,draw:true,awards:true,duel:true},
   frames:{gallery:true,film:true,editorial:true,gold:true,polaroid:true,chrome:true,neon:true,lufkin:true,blueprint:true,trophee:true,gearsclair:true,theme:true},
   filters:{none:true,bw:true,vintage:true,pop:true,warm:true,cool:true,duo:true,soft:true,indus:true},
   countdown:3, stripCount:4, idle:30,
@@ -387,8 +405,10 @@ const DICT={};
   const G=[["Touchez pour commencer","Touch to start","Zum Starten berühren","Toca para empezar","Tocca per iniziare","Toque para começar","Tik om te beginnen"],["Mode démo","Demo mode","Demo-Modus","Modo demo","Modalità demo","Modo demo","Demomodus"],["Son","Sound","Ton","Sonido","Suono","Som","Geluid"],["oui","on","an","sí","sì","sim","aan"],["non","off","aus","no","no","não","uit"],["Choisissez votre format","Choose your format","Wähle dein Format","Elige tu formato","Scegli il formato","Escolha o formato","Kies je formaat"],["Retour","Back","Zurück","Volver","Indietro","Voltar","Terug"],["Votre look","Your look","Dein Look","Tu estilo","Il tuo look","O seu estilo","Jouw look"],["Cadre","Frame","Rahmen","Marco","Cornice","Moldura","Lijst"],["Filtre","Filter","Filter","Filtro","Filtro","Filtro","Filter"],["Votre message","Your message","Deine Nachricht","Tu mensaje","Il tuo messaggio","A sua mensagem","Jouw bericht"],["(facultatif)","(optional)","(optional)","(opcional)","(facoltativo)","(opcional)","(optioneel)"],["Lancer","Start","Los geht's","¡Vamos!","Via!","Começar","Start"],["Annuler","Cancel","Abbrechen","Cancelar","Annulla","Cancelar","Annuleren"],["C'est dans la boîte","It's in the box!","Im Kasten!","¡Listo!","È fatta!","Está no papo!","Het zit erin!"],["Imprimer","Print","Drucken","Imprimir","Stampa","Imprimir","Printen"],["Télécharger","Download","Herunterladen","Descargar","Scarica","Transferir","Downloaden"],["Partager","Share","Teilen","Compartir","Condividi","Partilhar","Delen"],["Recommencer","Start over","Nochmal","Repetir","Ricomincia","Recomeçar","Opnieuw"],["Photo","Photo","Foto","Foto","Foto","Foto","Foto"],["Photomaton","Photo strip","Fotostreifen","Tira de fotos","Striscia di foto","Tira de fotos","Fotostrip"],["GIF animé","Animated GIF","Animiertes GIF","GIF animado","GIF animata","GIF animado","Geanimeerde GIF"],["Collage","Collage","Collage","Collage","Collage","Colagem","Collage"],["Pop Art","Pop Art","Pop-Art","Pop Art","Pop Art","Pop Art","Pop Art"],["Duo","Duo","Duo","Dúo","Duo","Duo","Duo"],["Une belle photo","One great photo","Ein tolles Foto","Una gran foto","Una bella foto","Uma bela foto","Eén mooie foto"],["Bande de photos","A strip of photos","Ein Fotostreifen","Una tira de fotos","Una striscia di foto","Uma tira de fotos","Een strip foto's"],["Boomerang qui bouge","Boomerang in motion","Bewegter Boomerang","Un boomerang en movimiento","Boomerang in movimento","Boomerang em movimento","Bewegende boemerang"],["4 photos en mosaïque","4 photos in a mosaic","4 Fotos als Mosaik","4 fotos en mosaico","4 foto a mosaico","4 fotos em mosaico","4 foto's als mozaïek"],["1 photo, 4 couleurs","1 photo, 4 colors","1 Foto, 4 Farben","1 foto, 4 colores","1 foto, 4 colori","1 foto, 4 cores","1 foto, 4 kleuren"],["2 photos côte à côte","2 photos side by side","2 Fotos nebeneinander","2 fotos lado a lado","2 foto affiancate","2 fotos lado a lado","2 foto's naast elkaar"],["photos à la suite","photos in a row","Fotos hintereinander","fotos seguidas","foto di fila","fotos seguidas","foto's achter elkaar"],["Galerie","Gallery","Galerie","Galería","Galleria","Galeria","Galerij"],["Pellicule","Film strip","Filmstreifen","Película","Pellicola","Película","Filmrol"],["Édito","Editorial","Editorial","Editorial","Editoriale","Editorial","Editoriaal"],["Art déco","Art Deco","Art déco","Art déco","Art déco","Art déco","Art deco"],["Instantané","Instant","Sofortbild","Instantánea","Istantanea","Instantâneo","Polaroid"],["Néon","Neon","Neon","Neón","Neon","Néon","Neon"],["Lufkin Acier","Lufkin Steel","Lufkin Stahl","Lufkin Acero","Lufkin Acciaio","Lufkin Aço","Lufkin Staal"],["Lufkin Plan","Lufkin Blueprint","Lufkin Bauplan","Lufkin Plano","Lufkin Progetto","Lufkin Planta","Lufkin Blauwdruk"],["Trophée Acier","Trophy Steel","Pokal Stahl","Trofeo Acero","Trofeo Acciaio","Troféu Aço","Trofee Staal"],["Trophée Clair","Trophy Light","Pokal Hell","Trofeo Claro","Trofeo Chiaro","Troféu Claro","Trofee Licht"],["Assorti","Matching","Passend","A juego","Coordinata","Combinada","Bijpassend"],["Original","Original","Original","Original","Originale","Original","Origineel"],["Noir et blanc","Black & white","Schwarz-Weiß","Blanco y negro","Bianco e nero","Preto e branco","Zwart-wit"],["Chaud","Warm","Warm","Cálido","Caldo","Quente","Warm"],["Froid","Cool","Kalt","Frío","Freddo","Frio","Koel"],["Teal","Teal","Petrol","Turquesa","Turchese","Turquesa","Turkoois"],["Doux","Soft","Weich","Suave","Morbido","Suave","Zacht"],["Acier","Steel","Stahl","Acero","Acciaio","Aço","Staal"],["Préparez-vous à bouger !","Get ready to move!","Mach dich bereit zum Bewegen!","¡Prepárate para moverte!","Preparati a muoverti!","Prepare-se para mexer!","Maak je klaar om te bewegen!"],["Bougez !","Move!","Beweg dich!","¡Muévete!","Muoviti!","Mexa-se!","Beweeg!"],["Souriez !","Smile!","Bitte lächeln!","¡Sonríe!","Sorridi!","Sorria!","Lach!"],["On enchaîne…","Next one…","Weiter geht's…","Seguimos…","Si continua…","Vamos seguir…","We gaan door…"],["Développement en cours…","Developing your photo…","Foto wird entwickelt…","Revelando tu foto…","Sviluppo in corso…","A revelar a foto…","Je foto wordt ontwikkeld…"],["Oups, un problème est survenu.","Oops, something went wrong.","Hoppla, da ist etwas schiefgelaufen.","Vaya, ha ocurrido un problema.","Ops, si è verificato un problema.","Ops, ocorreu um problema.","Oeps, er ging iets mis."],["Création du GIF…","Creating your GIF…","GIF wird erstellt…","Creando tu GIF…","Creazione della GIF…","A criar o GIF…","GIF wordt gemaakt…"],["sur","of","von","de","di","de","van"],["Grimace !","Make a face!","Zieh eine Grimasse!","¡Haz una mueca!","Fai una smorfia!","Faça uma careta!","Trek een gek gezicht!"],["Sérieux comme un trophée","Serious as a trophy","Ernst wie ein Pokal","Serio como un trofeo","Serio come un trofeo","Sério como um troféu","Serieus als een trofee"],["Câlin d'équipe","Team hug!","Teamumarmung!","¡Abrazo de equipo!","Abbraccio di squadra!","Abraço de equipa!","Teamknuffel!"],["Bras en l'air !","Arms up!","Arme hoch!","¡Brazos arriba!","Braccia in alto!","Braços no ar!","Armen omhoog!"],["Tournez comme un engrenage","Spin like a gear","Dreh dich wie ein Zahnrad","Gira como un engranaje","Gira come un ingranaggio","Gire como uma engrenagem","Draai als een tandwiel"],["Regard de champion","Champion look","Siegerblick","Mirada de campeón","Sguardo da campione","Olhar de campeão","Kampioensblik"],["Clin d'œil !","Wink!","Zwinkern!","¡Guiño!","Strizza l'occhio!","Pisque o olho!","Knipoog!"],["Le plus grand sourire","Your biggest smile","Dein breitestes Lächeln","Tu sonrisa más grande","Il sorriso più grande","O maior sorriso","Je grootste glimlach"],["Pose de super-héros","Superhero pose","Superhelden-Pose","Pose de superhéroe","Posa da supereroe","Pose de super-herói","Superheldenpose"],["Chuchotez un secret","Whisper a secret","Flüstere ein Geheimnis","Susurra un secreto","Sussurra un segreto","Sussurre um segredo","Fluister een geheimpje"],["Impressions terminées","No prints left","Keine Drucke mehr","Sin impresiones restantes","Stampe terminate","Impressões esgotadas","Geen prints meer"],["Téléchargement lancé !","Download started!","Download gestartet!","¡Descarga iniciada!","Download avviato!","Transferência iniciada!","Download gestart!"],["Partage impossible : utilisez Télécharger.","Sharing not possible: use Download.","Teilen nicht möglich: bitte „Herunterladen“ nutzen.","No se puede compartir: usa Descargar.","Condivisione non possibile: usa Scarica.","Não é possível partilhar: use Transferir.","Delen niet mogelijk: gebruik Downloaden."],["Retour à l'accueil dans","Back to start in","Zurück zum Start in","Volviendo al inicio en","Ritorno alla home tra","A voltar ao início em","Terug naar start over"],["Impression envoyée…","Printing…","Wird gedruckt…","Imprimiendo…","Stampa in corso…","A imprimir…","Wordt geprint…"],["Galerie pleine ou indisponible : la photo n'est pas archivée.","Gallery full or unavailable: the photo was not saved.","Galerie voll oder nicht verfügbar: Foto nicht gespeichert.","Galería llena o no disponible: la foto no se ha guardado.","Galleria piena o non disponibile: la foto non è stata salvata.","Galeria cheia ou indisponível: a foto não foi guardada.","Galerij vol of niet beschikbaar: foto niet opgeslagen."],["Code PIN","PIN code","PIN-Code","Código PIN","Codice PIN","Código PIN","Pincode"],["Trop d'essais : patientez un instant.","Too many attempts: please wait a moment.","Zu viele Versuche: bitte kurz warten.","Demasiados intentos: espera un momento.","Troppi tentativi: attendi un momento.","Demasiadas tentativas: aguarde um momento.","Te veel pogingen: wacht even."],["Trop d'essais : accès bloqué 30 secondes.","Too many attempts: locked for 30 seconds.","Zu viele Versuche: 30 Sekunden gesperrt.","Demasiados intentos: bloqueado 30 segundos.","Troppi tentativi: bloccato per 30 secondi.","Demasiadas tentativas: bloqueado 30 segundos.","Te veel pogingen: 30 seconden geblokkeerd."],["Aucune caméra détectée : mode démo activé.","No camera detected: demo mode on.","Keine Kamera erkannt: Demo-Modus aktiv.","No se detectó cámara: modo demo activado.","Nessuna fotocamera rilevata: modalità demo attiva.","Nenhuma câmara detetada: modo demo ativado.","Geen camera gevonden: demomodus actief."],["Aucune caméra détectée : le mode démo reste actif.","No camera detected: demo mode stays on.","Keine Kamera erkannt: Demo-Modus bleibt aktiv.","No se detectó cámara: el modo demo sigue activo.","Nessuna fotocamera rilevata: la modalità demo resta attiva.","Nenhuma câmara detetada: o modo demo continua ativo.","Geen camera gevonden: demomodus blijft actief."],["Mode démo : une fausse caméra remplace la vraie.","Demo mode: a fake camera replaces the real one.","Demo-Modus: Eine Test-Kamera ersetzt die echte.","Modo demo: una cámara falsa sustituye a la real.","Modalità demo: una fotocamera simulata sostituisce quella reale.","Modo demo: uma câmara simulada substitui a real.","Demomodus: een nepcamera vervangt de echte."],["Mode démo terminé.","Demo mode ended.","Demo-Modus beendet.","Modo demo terminado.","Modalità demo terminata.","Modo demo terminado.","Demomodus beëindigd."],["CAMÉRA DE DÉMONSTRATION","DEMO CAMERA","DEMO-KAMERA","CÁMARA DE DEMOSTRACIÓN","FOTOCAMERA DEMO","CÂMARA DE DEMONSTRAÇÃO","DEMOCAMERA"],["Aucun mode actif : ouvrez l'administration.","No active mode: open the admin panel.","Kein Modus aktiv: Administration öffnen.","Ningún modo activo: abre la administración.","Nessuna modalità attiva: apri l'amministrazione.","Nenhum modo ativo: abra a administração.","Geen modus actief: open het beheer."],["Équipe, prénoms…","Team, names…","Team, Namen…","Equipo, nombres…","Squadra, nomi…","Equipa, nomes…","Team, namen…"],["Notre soirée","Our party","Unsere Party","Nuestra fiesta","La nostra festa","A nossa festa","Ons feest"],["Merci d'être venus !","Thanks for coming!","Danke fürs Kommen!","¡Gracias por venir!","Grazie di essere venuti!","Obrigado por virem!","Bedankt voor jullie komst!"],["Thème ▸","Theme ▸","Thema ▸","Tema ▸","Tema ▸","Tema ▸","Thema ▸"],["Quitter","Quit","Beenden","Salir","Esci","Sair","Afsluiten"],["Thème","Theme","Thema","Tema","Tema","Tema","Thema"],["Aucune caméra : fausse caméra affichée","No camera: demo camera shown"]],A=[["Administration","Administration"],["Fermer","Close"],["Soirée","Event"],["Modes et styles","Modes & styles"],["Déroulé","Flow"],["Caméra","Camera"],["Impression","Printing"],["Cadres perso","Custom frames"],["Stats et reset","Stats & reset"],["Gardez au moins un élément actif.","Keep at least one item enabled."],["Nom de la soirée","Event name"],["Message sur les photos","Message on photos"],["Sons (bips, déclencheur)","Sounds (beeps, shutter)"],["Changer","Change"],["Code PIN modifié.","PIN changed."],["Le code doit contenir 4 à 8 chiffres.","The code must be 4 to 8 digits."],["Actuel","Current"],["Plein écran","Fullscreen"],["Lancer la visite","Start the tour"],["Affichage et démo","Display & demo"],["La visite guidée présente toutes les fonctions.","The guided tour presents every feature."],["Modes actifs","Active modes"],["Cadres actifs","Active frames"],["Filtres actifs","Active filters"],["Compte à rebours","Countdown"],["Photos du photomaton","Photo strip length"],["Bande verticale de 2 à 6 photos","Vertical strip of 2 to 6 photos"],["Retour à l'accueil après inactivité","Return to home after inactivity"],["Caméra changée.","Camera changed."],["Caméra indisponible.","Camera unavailable."],["Automatique","Automatic"],["Caméra détectée","Camera detected"],["Reflex Canon : installez EOS Webcam Utility, il apparaît ici comme une webcam.","Canon DSLR: install EOS Webcam Utility, it then appears here as a webcam."],["Résolution","Resolution"],["Maximale disponible","Maximum available"],["Effet miroir","Mirror effect"],["Impression activée","Printing enabled"],["Bande 5 x 15 cm","Strip 5 x 15 cm"],["Concerne les bandes du photomaton. Photos et GIF sortent en 10 x 15.","Applies to photo strips. Photos and GIFs print at 10 x 15."],["Impressions max. par invité","Max prints per guest"],["Imprimer une page test","Print a test page"],["Test impression","Print test"],["Ajouter un cadre (PNG)","Add a frame (PNG)"],["Cadre ajouté.","Frame added."],["Cadres personnalisés","Custom frames"],["PNG transparent : photo 3:2 (1800 x 1200) ou photomaton 1:3 (600 x 1800)","Transparent PNG: photo 3:2 (1800 x 1200) or strip 1:3 (600 x 1800)"],["Aucun cadre importé.","No frame imported."],["Supprimer","Delete"],["Préparation…","Preparing…"],["Tout télécharger (ZIP)","Download all (ZIP)"],["Photos de la soirée","Event photos"],["Bande","Strip"],["La galerie est vide pour le moment.","The gallery is empty for now."],["Confirmer ?","Confirm?"],["Photomatons","Strips"],["Impressions","Prints"],["En galerie","In gallery"],["Réinitialiser la soirée","Reset the event"],["Soirée réinitialisée.","Event reset."],["Réglages par défaut","Default settings"],["Réglages restaurés.","Settings restored."],["Effacer photos et compteurs","Erase photos and counters"],["Les réglages sont conservés.","Settings are kept."],["Remettre les réglages d'usine","Restore factory settings"],["Les photos sont conservées.","Photos are kept."],["Langue par défaut","Default language"],["Afficher le choix de langue aux invités","Show the language selector to guests"],["Précédent","Previous"],["Suivant","Next"],["Terminer","Finish"],["Étape","Step"],["Bienvenue ! L'accueil montre la caméra en direct. Ici, c'est une fausse caméra de démonstration. En bas à droite, un diaporama affiche les dernières photos de la soirée.","Welcome! The home screen shows the live camera. Here it is a demo camera. At the bottom right, a slideshow shows the latest photos of the event."],["Ce bouton relance cette visite à tout moment. Le bouton « Son » active ou coupe les bips et le déclencheur.","This button restarts the tour at any time. The \"Sound\" button turns the beeps and shutter on or off."],["Zone secrète : un appui long de 2 secondes dans ce coin (en haut à droite) ouvre le code PIN, puis l'administration. Code par défaut : 1234.","Secret area: a 2-second long press in this corner (top right) opens the PIN pad, then the admin panel. Default code: 1234."],["L'invité choisit son mode : photo simple, photomaton (bande verticale de plusieurs photos enchaînées) ou GIF animé façon boomerang.","The guest picks a mode: single photo, photo strip (a vertical strip of several shots), animated boomerang GIF, collage, pop art or duo."],["Aperçu en direct : voici une bande de photomaton. Chaque case montre la caméra, avec le cadre, le nom et la date de la soirée.","Live preview: here is a photo strip. Every cell shows the camera, with the frame, the event name and the date."],["Les cadres : touchez-en un pour voir le résultat immédiatement. Vous pouvez aussi importer vos propres cadres PNG.","Frames: tap one to see the result instantly. You can also import your own PNG frames."],["Les filtres : noir et blanc, vintage, pop, chaud, froid. L'aperçu change en direct.","Filters: black & white, vintage, pop, warm, cool. The preview changes live."],["Compte à rebours géant, flash, confettis : voici le résultat, composé avec le cadre, le nom et la date. Photo prise automatiquement pour la démo.","Giant countdown, flash, confetti: here is the result, composed with the frame, name and date. The photo was taken automatically for the demo."],["L'invité peut imprimer (nombre limité par invité), télécharger ou recommencer. Sans action, retour automatique à l'accueil après 30 s.","The guest can print (limited per guest), download or start over. With no action, it returns to the home screen after 30 s."],["Onze thèmes changent couleurs, typo, fond animé et cadre assorti. Regardez : le thème change tout seul.","Eleven themes change colors, typography, animated background and the matching frame. Watch: the theme changes by itself."],["Choisissez les modes, cadres et filtres proposés aux invités. Gardez-en au moins un de chaque.","Choose the modes, frames and filters offered to guests. Keep at least one of each."],["Durée du compte à rebours, nombre de photos de la bande, délai de retour à l'accueil.","Countdown length, number of photos in the strip, delay before returning to the home screen."],["Choix de la caméra (reflex Canon via EOS Webcam Utility), résolution et effet miroir.","Camera choice (Canon DSLR via EOS Webcam Utility), resolution and mirror effect."],["Impression : activation, format 10x15 ou bande 5x15, maximum par invité, page de test. Pour imprimer sans dialogue, lancez Chrome avec --kiosk-printing (voir le début du fichier).","Printing: on/off, 10x15 or 5x15 strip format, maximum per guest, test page. To print without a dialog, start Chrome with --kiosk-printing (see the top of the file)."],["Importez vos cadres PNG transparents ici.","Import your transparent PNG frames here."],["La galerie de la soirée : voir, supprimer, ou tout télécharger en ZIP.","The event gallery: view, delete, or download everything as a ZIP."],["Statistiques de la soirée, remise à zéro et réglages d'usine.","Event statistics, reset and factory settings."],["C'est tout ! Touchez l'écran pour tester vous-même. Le bandeau jaune « Mode démo » en haut permet de quitter la démo.","That is all! Touch the screen to try it yourself. The yellow \"Demo mode\" bar at the top lets you leave the demo."]];
   G.forEach(r=>{const d=DICT[r[0]]={};cols.forEach((c,i)=>{if(r[i+1])d[c]=r[i+1]})});
   A.forEach(r=>{DICT[r[0]]=DICT[r[0]]||{};DICT[r[0]].en=r[1]});
+  const X=[["Vidéo","Video","Video","Vídeo","Video","Vídeo","Video"],["Ralenti","Slow motion","Zeitlupe","Cámara lenta","Slow motion","Câmara lenta","Slow motion"],["Livre d'or","Guest book","Gästebuch","Libro de visitas","Libro degli ospiti","Livro de honra","Gastenboek"],["Stickers","Stickers","Sticker","Pegatinas","Adesivi","Autocolantes","Stickers"],["Dessin","Drawing","Zeichnen","Dibujo","Disegno","Desenho","Tekenen"],["Titre","Your title","Dein Titel","Tu título","Il tuo titolo","O seu título","Jouw titel"],["Duel","Face-off","Duell","Duelo","Sfida","Duelo","Duel"],["Un clip de 5 secondes","A 5-second clip","Ein 5-Sekunden-Clip","Un clip de 5 segundos","Una clip di 5 secondi","Um clip de 5 segundos","Een clip van 5 seconden"],["Votre clip au ralenti","Your clip in slow motion","Dein Clip in Zeitlupe","Tu clip en cámara lenta","La tua clip al rallentatore","O seu clip em câmara lenta","Je clip in slow motion"],["Un message vidéo de 10 s","A 10-second video message","Eine 10-Sekunden-Videobotschaft","Un mensaje en vídeo de 10 s","Un messaggio video di 10 s","Uma mensagem em vídeo de 10 s","Een videobericht van 10 s"],["Ajoutez lunettes, couronnes…","Add glasses, crowns…","Brillen, Kronen & mehr…","Añade gafas, coronas…","Aggiungi occhiali, corone…","Adicione óculos, coroas…","Voeg brillen, kronen toe…"],["Dessinez sur votre photo","Draw on your photo","Zeichne auf dein Foto","Dibuja sobre tu foto","Disegna sulla tua foto","Desenhe na sua foto","Teken op je foto"],["Le titre de la soirée","Your title of the night","Dein Titel des Abends","Tu título de la noche","Il tuo titolo della serata","O seu título da noite","Jouw titel van de avond"],["Deux équipes face à face","Two teams face to face","Zwei Teams im Duell","Dos equipos cara a cara","Due squadre faccia a faccia","Duas equipas frente a frente","Twee teams tegenover elkaar"],["Retouche","Touch up","Bearbeiten","Retocar","Ritocco","Retocar","Bewerken"],["Autocollants","Stickers","Sticker","Pegatinas","Adesivi","Autocolantes","Stickers"],["Crayon","Pen","Stift","Lápiz","Penna","Lápis","Pen"],["Valider","Done","Fertig","Listo","Fatto","Concluir","Klaar"],["Annuler le dernier","Undo","Rückgängig","Deshacer","Annulla","Anular","Ongedaan maken"],["Supprimer","Delete","Löschen","Eliminar","Elimina","Eliminar","Verwijderen"],["Vidéo non disponible sur ce navigateur.","Video is not available in this browser.","Video wird in diesem Browser nicht unterstützt.","Vídeo no disponible en este navegador.","Video non disponibile in questo browser.","Vídeo indisponível neste navegador.","Video is niet beschikbaar in deze browser."],["Action !","Action!","Action!","¡Acción!","Azione!","Ação!","Actie!"],["Star de la soirée","Star of the night","Star des Abends","Estrella de la noche","Star della serata","Estrela da noite","Ster van de avond"],["Meilleur sourire","Best smile","Schönstes Lächeln","Mejor sonrisa","Miglior sorriso","Melhor sorriso","Beste glimlach"],["Allure de champion","Champion vibes","Siegertyp","Aire de campeón","Aria da campione","Ar de campeão","Kampioensuitstraling"],["Âme de la fête","Soul of the party","Seele der Party","Alma de la fiesta","Anima della festa","Alma da festa","Ziel van het feest"],["Le plus stylé","Most stylish","Stilvollster Gast","El más elegante","Il più stiloso","O mais estiloso","Meest stijlvol"],["Énergie maximale","Maximum energy","Maximale Energie","Energía máxima","Energia al massimo","Energia máxima","Maximale energie"],["Légende vivante","Living legend","Lebende Legende","Leyenda viviente","Leggenda vivente","Lenda viva","Levende legende"],["Le plus photogénique","Most photogenic","Fotogenster Gast","El más fotogénico","Il più fotogenico","O mais fotogénico","Meest fotogeniek"]];X.forEach(r=>{const d=DICT[r[0]]=DICT[r[0]]||{};cols.forEach((c,i)=>{if(r[i+1])d[c]=r[i+1]})});
 })();
 const PATS=[
+  [/^Action !  (\d+)$/,m=>tx('Action !')+'  '+m[1]],
   [/^Photo (\d+) sur (\d+)(?:  •  (.+))?$/,m=>tx('Photo')+' '+m[1]+' '+tx('sur')+' '+m[2]+(m[3]?'  •  '+tx(m[3]):'')],
   [/^Imprimer \((\d+)\/(\d+)\)$/,m=>tx('Imprimer')+' ('+m[1]+'/'+m[2]+')'],
   [/^Retour à l'accueil dans (\d+) s$/,m=>tx("Retour à l'accueil dans")+' '+m[1]+' s'],
@@ -671,7 +691,7 @@ function layoutFor(mode,n,full){
     const rects=[];for(let i=0;i<n;i++)rects.push({x:m,y:m+i*(ph+gap),w:W-2*m,h:ph});
     return {W,H,rects,foot:{x:0,y:H-foot,w:W,h:foot},deco:.45,strip:true};
   }
-  if(mode==='collage'||mode==='popart'||mode==='duo'){const cs=2,rs=mode==='duo'?1:2,x0=full?0:60,y0=full?0:60,aw=full?1800:1680,ah=full?1040:980,g=full?10:20,cw=(aw-g*(cs-1))/cs,ch=(ah-g*(rs-1))/rs,rects=[];for(let r=0;r<rs;r++)for(let c=0;c<cs;c++)rects.push({x:x0+c*(cw+g),y:y0+r*(ch+g),w:cw,h:ch});return {W:1800,H:1200,rects,foot:{x:0,y:1040,w:1800,h:160},deco:1}}
+  if(mode==='collage'||mode==='popart'||mode==='duo'||mode==='duel'){const cs=2,rs=(mode==='duo'||mode==='duel')?1:2,x0=full?0:60,y0=full?0:60,aw=full?1800:1680,ah=full?1040:980,g=full?10:20,cw=(aw-g*(cs-1))/cs,ch=(ah-g*(rs-1))/rs,rects=[];for(let r=0;r<rs;r++)for(let c=0;c<cs;c++)rects.push({x:x0+c*(cw+g),y:y0+r*(ch+g),w:cw,h:ch});return {W:1800,H:1200,rects,foot:{x:0,y:1040,w:1800,h:160},deco:1}}
   if(full)return {W:1800,H:1200,rects:[{x:0,y:0,w:1800,h:1200}],foot:{x:0,y:1040,w:1800,h:160},deco:1};
   return {W:1800,H:1200,rects:[{x:60,y:60,w:1680,h:980}],foot:{x:0,y:1040,w:1800,h:160},deco:1};
 }
@@ -702,6 +722,13 @@ function logoFooter(c,L,ink,plate,logo){
   }
   c.restore();
 }
+const AWARDS=['Star de la soirée','Meilleur sourire','Allure de champion','Âme de la fête','Le plus stylé','Énergie maximale','Légende vivante','Le plus photogénique'];
+function drawAward(cv){const c=cv.getContext('2d'),W=cv.width,t='🏆  '+tx(AWARDS[Math.random()*AWARDS.length|0]).toUpperCase();
+  c.save();const fam=T.font+",'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji'";const fs=fitFont(c,t,fam,Math.round(W*.05),W*.74);c.font='700 '+fs+'px '+fam;
+  const tw=c.measureText(t).width+W*.07,h=fs*1.9,x=W/2-tw/2,y=W*.05;c.fillStyle=T.c1;c.shadowColor='rgba(0,0,0,.5)';c.shadowBlur=W*.02;c.beginPath();c.roundRect(x,y,tw,h,h/2);c.fill();c.shadowBlur=0;
+  c.fillStyle=T.btn;c.textAlign='center';c.textBaseline='middle';c.fillText(t,W/2,y+h/2+fs*.04);c.restore()}
+function drawVS(cv){const c=cv.getContext('2d'),W=cv.width,cx=W/2,cy=(60+490)*W/1800,r=W*.06;c.save();c.shadowColor='rgba(0,0,0,.5)';c.shadowBlur=W*.02;c.fillStyle=T.c1;c.beginPath();c.arc(cx,cy,r,0,7);c.fill();c.shadowBlur=0;c.lineWidth=W*.006;c.strokeStyle='#fff';c.stroke();
+  c.fillStyle=T.btn;c.font='700 '+Math.round(r*.9)+'px '+T.font;c.textAlign='center';c.textBaseline='middle';c.fillText('VS',cx,cy+r*.05);c.restore()}
 function gearPath(c,x,y,r,n,rot){c.beginPath();const ri=r*.8,st=Math.PI*2/n;for(let i=0;i<n;i++){const a=rot+i*st;[[-.27,ri],[-.15,r],[.15,r],[.27,ri]].forEach(p=>c.lineTo(x+Math.cos(a+p[0]*st*1.6)*p[1],y+Math.sin(a+p[0]*st*1.6)*p[1]))}c.closePath();c.moveTo(x+r*.3,y);c.arc(x,y,r*.3,0,Math.PI*2,true)}
 function rng(seed){return()=>(seed=(seed*16807)%2147483647)/2147483647}
 function star(c,x,y,s){c.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4-Math.PI/2,r=i%2?s*.22:s;c.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r)}c.closePath();c.fill()}
@@ -916,19 +943,28 @@ $('#demoQuit').onclick=()=>{
 };
 
 /* --- choix du mode --- */
-const ALLMODES=['single','strip','gif','collage','popart','duo'];
+const extOf=p=>p.type==='gif'?'gif':p.type==='video'?'webm':'jpg';
+const ALLMODES=['single','strip','gif','collage','popart','duo','video','slowmo','guestbook','stickers','draw','awards','duel'];
+const VIDEO={video:{dur:5},slowmo:{dur:3,slow:true},guestbook:{dur:10,audio:true}};
 const POPF=['saturate(2.4) contrast(1.25)','hue-rotate(90deg) saturate(2.6) contrast(1.25)','hue-rotate(200deg) saturate(2.6) contrast(1.25)','grayscale(1) sepia(1) hue-rotate(-30deg) saturate(4) contrast(1.3)'];
-const cellsOf=(mode,n)=>mode==='strip'?n:(mode==='collage'||mode==='popart')?4:mode==='duo'?2:1;
+const cellsOf=(mode,n)=>mode==='strip'?n:(mode==='collage'||mode==='popart')?4:(mode==='duo'||mode==='duel')?2:1;
 const MODE_INFO={
   single:{t:'Photo',d:'Une belle photo',svg:'<rect x="6" y="14" width="52" height="38" rx="6"/><circle cx="32" cy="33" r="10"/><path d="M22 14l4-6h12l4 6"/>'},
   strip:{t:'Photomaton',d:'Bande de photos',svg:'<rect x="18" y="4" width="28" height="12" rx="2"/><rect x="18" y="18" width="28" height="12" rx="2"/><rect x="18" y="32" width="28" height="12" rx="2"/><rect x="18" y="46" width="28" height="12" rx="2"/>'},
   collage:{t:'Collage',d:'4 photos en mosaïque',svg:'<rect x="8" y="8" width="22" height="22" rx="3"/><rect x="34" y="8" width="22" height="22" rx="3"/><rect x="8" y="34" width="22" height="22" rx="3"/><rect x="34" y="34" width="22" height="22" rx="3"/>'},
   popart:{t:'Pop Art',d:'1 photo, 4 couleurs',svg:'<rect x="8" y="8" width="22" height="22" rx="3"/><rect x="34" y="8" width="22" height="22" rx="3"/><rect x="8" y="34" width="22" height="22" rx="3"/><rect x="34" y="34" width="22" height="22" rx="3"/><circle cx="19" cy="19" r="5"/><circle cx="45" cy="19" r="5"/><circle cx="19" cy="45" r="5"/><circle cx="45" cy="45" r="5"/>'},
+  video:{t:'Vidéo',d:'Un clip de 5 secondes',svg:'<rect x="6" y="16" width="36" height="32" rx="5"/><path d="M42 28l16-9v26l-16-9z"/>'},
+  slowmo:{t:'Ralenti',d:'Votre clip au ralenti',svg:'<circle cx="32" cy="32" r="22"/><path d="M32 18v14l9 6"/>'},
+  guestbook:{t:"Livre d'or",d:'Un message vidéo de 10 s',svg:'<path d="M12 8h30a6 6 0 0 1 6 6v36a6 6 0 0 1-6 6H12z"/><path d="M20 20h20M20 30h20M20 40h12"/><path d="M52 24l6 6-14 14-8 2 2-8z"/>'},
+  stickers:{t:'Stickers',d:'Ajoutez lunettes, couronnes…',svg:'<circle cx="32" cy="32" r="24"/><circle cx="24" cy="26" r="3"/><circle cx="40" cy="26" r="3"/><path d="M20 38a14 14 0 0 0 24 0"/>'},
+  draw:{t:'Dessin',d:'Dessinez sur votre photo',svg:'<path d="M10 54l4-14L42 12a6 6 0 0 1 8 8L22 48z"/><path d="M38 16l10 10"/>'},
+  awards:{t:'Titre',d:'Le titre de la soirée',svg:'<path d="M20 8h24v14a12 12 0 0 1-24 0z"/><path d="M20 12h-8v6a8 8 0 0 0 8 8M44 12h8v6a8 8 0 0 1-8 8M32 34v12M22 56h20M26 46h12"/>'},
+  duel:{t:'Duel',d:'Deux équipes face à face',svg:'<rect x="6" y="14" width="22" height="36" rx="3"/><rect x="36" y="14" width="22" height="36" rx="3"/><path d="M28 32h8"/>'},
   duo:{t:'Duo',d:'2 photos côte à côte',svg:'<rect x="6" y="12" width="24" height="40" rx="3"/><rect x="34" y="12" width="24" height="40" rx="3"/>'},
   gif:{t:'GIF animé',d:'Boomerang qui bouge',svg:'<path d="M50 24a20 20 0 0 0-36-4M14 40a20 20 0 0 0 36 4"/><path d="M14 8v12h12M50 56V44H38"/>'}
 };
 function onMode(){
-  const box=$('#modeList');box.innerHTML='';
+  const box=$('#modeList');box.innerHTML='';box.className='modes'+(enabledModes().length>6?' many':'');
   enabledModes().forEach(m=>{const i=MODE_INFO[m],b=document.createElement('button');b.className='mode';
     b.innerHTML=`<svg viewBox="0 0 64 64">${i.svg}</svg><span>${i.t}</span><small>${m==='strip'?S.stripCount+' photos à la suite':i.d}</small>`;
     b.onclick=()=>{beep(700,.1,'triangle');state.mode=m;go('style')};box.appendChild(b)});
@@ -965,10 +1001,35 @@ async function countdown(sec){
 }
 const POSES=['Grimace !','Sérieux comme un trophée','Câlin d\'équipe','Bras en l\'air !','Tournez comme un engrenage','Regard de champion','Clin d\'œil !','Le plus grand sourire','Pose de super-héros','Chuchotez un secret'];
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+let micStream=null;
+async function runVideo(mode,L,msg){
+  const cfg=VIDEO[mode],r=L.rects[0],sc=.5,cvv=document.createElement('canvas');cvv.width=900;cvv.height=600;const c=cvv.getContext('2d'),lay=layerFor(state.frame,'single',1,sc);
+  const drawF=()=>{c.fillStyle=T.paper;c.fillRect(0,0,900,600);c.save();c.filter=FILTERS[state.filter];drawCover(c,cam.el,cam.w,cam.h,r.x*sc,r.y*sc,r.w*sc,r.h*sc,S.mirror);c.restore();c.drawImage(lay,0,0,900,600)};
+  try{
+    msg.textContent='Préparez-vous à bouger !';if(!await countdown(S.countdown))return abortShoot();
+    const type=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t));
+    if(!type||!cvv.captureStream){toast('Vidéo non disponible sur ce navigateur.');go('style');return}
+    const stream=cvv.captureStream(30);
+    if(cfg.audio){try{micStream=micStream||await navigator.mediaDevices.getUserMedia({audio:true});micStream.getAudioTracks().forEach(t=>stream.addTrack(t))}catch(e){}}
+    const rec=new MediaRecorder(stream,{mimeType:type,videoBitsPerSecond:3000000}),chunks=[];rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+    const stopped=new Promise(res=>rec.onstop=res);let poster=null;drawF();rec.start(250);const t0=performance.now();
+    for(;;){const el=(performance.now()-t0)/1000;if(state.abort||el>=cfg.dur)break;drawF();
+      if(!poster&&el>.7){poster=document.createElement('canvas');poster.width=900;poster.height=600;poster.getContext('2d').drawImage(cvv,0,0)}
+      msg.textContent='Action !  '+Math.ceil(cfg.dur-el);await new Promise(r=>requestAnimationFrame(r))}
+    drawF();rec.stop();await stopped;
+    if(state.abort){state.abort=false;return}
+    flash();await finalizeVideo(new Blob(chunks,{type:'video/webm'}),poster||cvv,cfg.slow);
+  }catch(e){console.error(e);toast('Oups, un problème est survenu.');go('home')}
+}
+async function finalizeVideo(blob,poster,slow){
+  const pb=await toBlob(poster),item={type:'video',ts:Date.now(),blob,poster:pb,thumb:await thumbOf(poster),slow:!!slow};
+  S.stats.videos=(S.stats.videos||0)+1;return finishItem(item);
+}
 async function runShoot(){
   state.abort=false;state.grabs=[];const mode=state.mode,full=isCustom(state.frame),n=nCells(),shots=mode==='popart'?1:n;
   const cv=$('#shootCv');cv.width=mode==='strip'?300:900;cv.height=mode==='strip'?900:600;
   const L=layoutFor(mode,n,full),msg=$('#shootMsg'),poses=shuffle(POSES);
+  if(VIDEO[mode])return runVideo(mode,L,msg);
   try{
     if(mode==='gif'){
       msg.textContent='Préparez-vous à bouger !';if(!await countdown(S.countdown))return abortShoot();
@@ -1000,28 +1061,63 @@ async function finalize(){
     const poster=composeFinal([state.poster],'single',state.frame,1),pb=await toBlob(poster);
     item={type:'gif',ts:Date.now(),blob,poster:pb,thumb:await thumbOf(poster)};S.stats.gifs++;
   }else{
-    const cv=composeFinal(state.grabs,mode,state.frame,1),blob=await toBlob(cv);
+    let cv=composeFinal(state.grabs,mode,state.frame,1);
+    if(mode==='awards')drawAward(cv);else if(mode==='duel')drawVS(cv);else if(mode==='stickers'||mode==='draw')cv=await runEditor(cv,mode);
+    const blob=await toBlob(cv);
     item={type:mode==='strip'?'strip':'photo',ts:Date.now(),blob,thumb:await thumbOf(cv)};
     if(mode==='strip')S.stats.strips++;else S.stats.photos++;
   }
+  return finishItem(item);
+}
+async function finishItem(item){let url;
   save();try{item.id=await DB.add('photos',item)}catch(e){toast('Galerie pleine ou indisponible : la photo n\'est pas archivée.')}
   state.result=item;state.guestPrints=0;
-  const old=$('#resImg').src;url=URL.createObjectURL(item.blob);$('#resImg').src=url;if(old&&old.startsWith('blob:'))URL.revokeObjectURL(old);
+  const old=$('#resImg').src;url=URL.createObjectURL(item.blob);showRes(item,url);if(old&&old.startsWith('blob:'))URL.revokeObjectURL(old);
   go('result');fanfare();confetti(innerWidth*.3,innerHeight*.4,120);setTimeout(()=>confetti(innerWidth*.7,innerHeight*.4,120),250);
   updateResButtons();
 }
 
+/* --- éditeur (stickers, dessin) --- */
+const STK=['🕶️','😎','👑','🎩','🎧','🧢','🥸','🎀','⭐','🔥','💎','❤️','🎉','🥂','🏆','⚙️'],PENS=['#ffffff','#ff2bd6','#20e3ff','#ffe600','#7bff6a','#111111'];
+function runEditor(base,mode){return new Promise(resolve=>{
+  const cv=$('#editCv'),c=cv.getContext('2d'),K=base.width/cv.width,ed={items:[],sel:-1,pen:mode==='draw'?PENS[1]:null};let drag=null;
+  const draw=(ctx,k,ui)=>{ctx.drawImage(base,0,0,ctx.canvas.width,ctx.canvas.height);
+    ed.items.forEach((it,i)=>{if(it.t==='s'){ctx.font=Math.round(it.size*k)+'px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(it.e,it.x*k,it.y*k);
+        if(ui&&i===ed.sel){ctx.save();ctx.strokeStyle='rgba(255,255,255,.95)';ctx.setLineDash([6,5]);ctx.lineWidth=2;ctx.strokeRect(it.x-it.size*.6,it.y-it.size*.6,it.size*1.2,it.size*1.2);ctx.restore()}}
+      else{ctx.save();ctx.strokeStyle=it.c;ctx.lineWidth=it.w*k;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();it.p.forEach((q,j)=>j?ctx.lineTo(q[0]*k,q[1]*k):ctx.moveTo(q[0]*k,q[1]*k));if(it.p.length===1)ctx.lineTo(it.p[0][0]*k+.1,it.p[0][1]*k);ctx.stroke();ctx.restore()}})};
+  const redraw=()=>draw(c,1,true);
+  const mark=()=>{$$('#penChips .chip').forEach((b,i)=>b.classList.toggle('on',ed.pen===PENS[i]));$$('#stkChips .chip').forEach(b=>b.classList.remove('on'))};
+  const sk=$('#stkChips'),pn=$('#penChips');sk.innerHTML='';pn.innerHTML='';
+  STK.forEach(e=>{const b=document.createElement('button');b.className='chip stk';b.textContent=e;b.onclick=()=>{ed.items.push({t:'s',e,x:cv.width/2,y:cv.height/2,size:150});ed.sel=ed.items.length-1;ed.pen=null;mark();redraw();beep(650,.05,'triangle')};sk.appendChild(b)});
+  PENS.forEach(col=>{const b=document.createElement('button');b.className='chip';b.innerHTML='<i style="display:inline-block;width:1.1em;height:1.1em;border-radius:50%;vertical-align:-.15em;background:'+col+';border:2px solid #fff"></i>';b.onclick=()=>{ed.pen=col;ed.sel=-1;mark();redraw()};pn.appendChild(b)});
+  const pos=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
+  cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);const[x,y]=pos(e);
+    for(let i=ed.items.length-1;i>=0;i--){const it=ed.items[i];if(it.t==='s'&&Math.abs(x-it.x)<it.size*.6&&Math.abs(y-it.y)<it.size*.6){ed.sel=i;drag={m:'move',dx:x-it.x,dy:y-it.y};redraw();return}}
+    if(ed.pen){const st={t:'p',c:ed.pen,w:7,p:[[x,y]]};ed.items.push(st);ed.sel=-1;drag={m:'pen',st}}else ed.sel=-1;redraw()};
+  cv.onpointermove=e=>{if(!drag)return;const[x,y]=pos(e);if(drag.m==='move'){const it=ed.items[ed.sel];it.x=x-drag.dx;it.y=y-drag.dy}else drag.st.p.push([x,y]);redraw()};
+  cv.onpointerup=cv.onpointercancel=()=>{drag=null};
+  const grow=f=>{const it=ed.items[ed.sel];if(it&&it.t==='s'){it.size=Math.max(40,Math.min(500,it.size*f));redraw()}};
+  $('#editBig').onclick=()=>grow(1.2);$('#editSmall').onclick=()=>grow(1/1.2);
+  $('#editDel').onclick=()=>{if(ed.sel>=0){ed.items.splice(ed.sel,1);ed.sel=-1;redraw()}};
+  $('#editUndo').onclick=()=>{ed.items.pop();ed.sel=-1;redraw()};
+  $('#editOk').onclick=()=>{ed.sel=-1;const out=document.createElement('canvas');out.width=base.width;out.height=base.height;draw(out.getContext('2d'),K,false);resolve(out)};
+  mark();go('edit');redraw();
+})}
+
 /* --- résultat --- */
+function showRes(item,url){const v=$('#resVid'),im=$('#resImg');
+  if(item.type==='video'){v.src=url;v.style.display='';im.style.display='none';v.playbackRate=item.slow?.5:1;v.play().catch(()=>{})}
+  else{v.pause();v.removeAttribute('src');v.style.display='none';im.style.display='';im.src=url}}
 function updateResButtons(){
   const p=$('#btnPrint'),ok=S.print.enabled&&state.guestPrints<S.print.max;
-  p.style.display=S.print.enabled?'':'none';p.disabled=!ok;$('#btnShare').style.display=canShareFile()?'':'none';
+  p.style.display=S.print.enabled&&!(state.result&&state.result.type==='video')?'':'none';p.disabled=!ok;$('#btnShare').style.display=canShareFile()?'':'none';
   p.textContent=ok?`Imprimer (${state.guestPrints}/${S.print.max})`:'Impressions terminées';
 }
-$('#btnDl').onclick=()=>{const r=state.result;if(!r)return;download(r.blob,`photobooth-${slug(S.name)}-${r.ts}.${r.type==='gif'?'gif':'jpg'}`);toast('Téléchargement lancé !')};
+$('#btnDl').onclick=()=>{const r=state.result;if(!r)return;download(r.blob,`photobooth-${slug(S.name)}-${r.ts}.${extOf(r)}`);toast('Téléchargement lancé !')};
 $('#btnAgain').onclick=()=>{beep(700,.1,'triangle');if(enabledModes().length>1)go('mode');else{state.mode=enabledModes()[0]||'single';go('style')}};
 $('#btnPrint').onclick=()=>doPrint();
 /* Partage natif (téléphone/tablette) : SMS, WhatsApp, e-mail, AirDrop... via le menu du système */
-function shareFile(){const r=state.result;if(!r)return null;return new File([r.blob],`photo-${slug(S.name)}-${r.ts}.${r.type==='gif'?'gif':'jpg'}`,{type:r.blob.type||(r.type==='gif'?'image/gif':'image/jpeg')})}
+function shareFile(){const r=state.result;if(!r)return null;return new File([r.blob],`photo-${slug(S.name)}-${r.ts}.${extOf(r)}`,{type:r.blob.type||(r.type==='gif'?'image/gif':'image/jpeg')})}
 function canShareFile(){try{const f=shareFile();return !!(f&&navigator.share&&navigator.canShare&&navigator.canShare({files:[f]}))}catch(e){return false}}
 $('#btnShare').onclick=async()=>{try{await navigator.share({files:[shareFile()],title:S.name,text:S.message})}catch(e){if(e&&e.name!=='AbortError')toast('Partage impossible : utilisez Télécharger.')}};
 
@@ -1144,14 +1240,14 @@ async function tFrames(b){
 async function tGallery(b){
   galUrls.forEach(URL.revokeObjectURL);galUrls=[];const all=await DB.all('photos');
   const zip=document.createElement('button');zip.className='tab on';zip.textContent=`Tout télécharger (ZIP) — ${all.length}`;zip.disabled=!all.length;
-  zip.onclick=async()=>{zip.textContent='Préparation…';const files=[];let i=0;for(const p of all){i++;const ext=p.type==='gif'?'gif':'jpg';files.push({name:`${p.type}-${String(i).padStart(3,'0')}.${ext}`,data:new Uint8Array(await p.blob.arrayBuffer())})}
+  zip.onclick=async()=>{zip.textContent='Préparation…';const files=[];let i=0;for(const p of all){i++;const ext=extOf(p);files.push({name:`${p.type}-${String(i).padStart(3,'0')}.${ext}`,data:new Uint8Array(await p.blob.arrayBuffer())})}
     download(makeZip(files),`photobooth-${slug(S.name)}.zip`);zip.textContent=`Tout télécharger (ZIP) — ${all.length}`};
   b.append(field('Photos de la soirée',zip));
   const g=document.createElement('div');g.className='grid';
   all.slice().reverse().forEach(p=>{const d=document.createElement('div');d.className='gi';const im=document.createElement('img'),u=URL.createObjectURL(p.thumb||p.blob);galUrls.push(u);im.src=u;
-    im.onclick=()=>{const bu=URL.createObjectURL(p.blob);galUrls.push(bu);$('#lightbox img').src=bu;$('#lightbox').classList.add('on')};
+    im.onclick=()=>{const bu=URL.createObjectURL(p.type==='video'?p.poster:p.blob);galUrls.push(bu);$('#lightbox img').src=bu;$('#lightbox').classList.add('on')};
     const x=document.createElement('button');x.textContent='✕';x.onclick=async()=>{await DB.del('photos',p.id);renderAdmin()};
-    const t=document.createElement('i');t.textContent={photo:'Photo',strip:'Bande',gif:'GIF'}[p.type]||p.type;d.append(im,x,t);g.appendChild(d)});
+    const t=document.createElement('i');t.textContent={photo:'Photo',strip:'Bande',gif:'GIF',video:'Vidéo'}[p.type]||p.type;d.append(im,x,t);g.appendChild(d)});
   b.append(g);if(!all.length){const p=document.createElement('p');p.style.opacity='.7';p.textContent='La galerie est vide pour le moment.';b.append(p)}
 }
 $('#lightbox').onclick=()=>$('#lightbox').classList.remove('on');
@@ -1222,7 +1318,7 @@ function loop(t){
   if(t-lastBg>33){drawBg(t);lastBg=t}
   const act=$('.screen.active');if(!act)return;
   if(cur==='style')drawPreview($('#styleCv'));
-  else if(cur==='shoot')drawPreview($('#shootCv'),state.mode==='strip'?state.grabs:null);
+  else if(cur==='shoot')drawPreview($('#shootCv'),['strip','collage','duo','duel'].includes(state.mode)?state.grabs:null);
   else $$('.livecv',act).forEach(cv=>{const c=cv.getContext('2d');c.fillStyle='#000';c.fillRect(0,0,cv.width,cv.height);drawCover(c,cam.el,cam.w,cam.h,0,0,cv.width,cv.height,S.mirror&&!(demo||!camOK))});
 }
 (async function init(){

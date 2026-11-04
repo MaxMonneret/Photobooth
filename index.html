@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Photobooth</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
 <!--
 ================================================================================
  PHOTOBOOTH DE SOIRÉE  —  un seul fichier, aucune installation
@@ -195,6 +195,71 @@ select option{color:#000}
   #printSheet img{width:100%;height:100%;object-fit:contain;display:block}
 }
 </style>
+<style id="responsive">
+/* ===== Adaptation téléphone / tablette / écran quelconque ===== */
+html,body{height:100vh;height:100dvh}
+.screen{overflow-x:hidden;overflow-y:auto;justify-content:safe center;overscroll-behavior:contain;
+  padding:max(3vmin,env(safe-area-inset-top)) max(3vmin,env(safe-area-inset-right)) max(3vmin,env(safe-area-inset-bottom)) max(3vmin,env(safe-area-inset-left))}
+#s-admin{justify-content:flex-start;overflow:hidden}
+/* zones tactiles confortables sur tous les écrans */
+.btn{min-height:48px;padding-left:max(5vmin,24px);padding-right:max(5vmin,24px)}
+.btn.small{min-height:44px;padding-left:max(3vmin,16px);padding-right:max(3vmin,16px)}
+.chip{min-height:44px;padding:8px max(2.4vmin,16px)}
+.tab{min-height:44px;padding:8px max(2.4vmin,14px)}
+.num button,.mini{min-width:44px;height:44px}
+#styleCv,#shootCv{max-height:82vh;max-height:82dvh}
+.paper,.paper img{max-height:88dvh}
+#hot{width:max(13vmin,56px);height:max(13vmin,56px)}
+
+/* Portrait (téléphone debout, tablette verticale) */
+@media (max-aspect-ratio:1/1){
+  .cam-wrap{width:min(92vw,calc(46dvh*1.5))}
+  .slide{display:none}
+  .corner{position:static;justify-content:center;flex-wrap:wrap}
+  .corner[style]{left:auto!important}
+  .modes{flex-direction:column;align-items:center;gap:2vmin;width:100%}
+  .mode{width:min(90vw,520px);min-width:0;aspect-ratio:auto;min-height:88px;flex-direction:row;justify-content:flex-start;gap:4vmin;padding:2vmin 4vmin}
+  .mode svg{width:56px;height:56px;flex:none}
+  .mode small{text-align:left}
+  #s-style{gap:2vmin}
+  .pv{flex:none;height:auto}
+  #styleCv,#shootCv{max-height:38dvh;max-width:92vw}
+  .panel{width:min(94vw,560px)}
+  .paper,.paper img{max-width:88vw;max-height:48dvh}
+  .acts{min-width:0;width:min(92vw,420px)}
+  .acts .title{font-size:clamp(1.5rem,7vw,2.6rem)!important}
+  .f{flex-wrap:wrap}
+  .admcam{width:100%}
+  select,#admBody input[type=text],#admBody input[type=date],#admBody input[type=password],#admBody input[type=number]{max-width:100%}
+  .stat{padding:12px 20px}
+}
+/* Paysage bas (téléphone couché) */
+@media (max-height:520px) and (min-aspect-ratio:1/1){
+  .screen{gap:1.6vmin;padding-top:2vmin;padding-bottom:2vmin}
+  .title{font-size:clamp(1.4rem,7vmin,2.6rem)}
+  .slide{display:none}
+  .cam-wrap{width:min(40vw,calc(50vh*1.5))}
+  .mode{min-width:150px;aspect-ratio:auto;min-height:120px;gap:1vmin}
+  .mode svg{width:36px;height:36px}
+  #s-result{gap:3vmin}
+  .acts{min-width:min(34vw,320px);gap:1.4vmin}
+  #shootCv{max-height:58dvh}
+  #shootMsg{font-size:clamp(1rem,5vmin,1.6rem)}
+  #styleCv{max-height:78dvh}
+  .pv{height:auto}
+  .panel{gap:1vmin;max-height:100%}
+  .panel .title{font-size:clamp(1.2rem,6vmin,1.8rem)!important}
+  .chip{min-height:38px;padding:4px 14px}
+  .btn{min-height:42px}
+}
+/* Très petits écrans */
+@media (max-width:380px){
+  .btn{letter-spacing:.06em}
+  .tap{letter-spacing:.2em}
+}
+/* Grands écrans / bornes : plafonner pour garder une mise en page lisible */
+@media (min-width:2200px){.panel{width:min(34vw,760px)}}
+</style>
 <style id="pageStyle">@page{margin:0}</style>
 </head>
 <body data-theme="noir">
@@ -373,7 +438,7 @@ const cam={get el(){return demo||!camOK?fake:video},get w(){return demo||!camOK?
 async function startCamera(){
   stopCamera();
   const res={max:{w:4096,h:2160},'1080':{w:1920,h:1080},'720':{w:1280,h:720}}[S.resolution]||{w:4096,h:2160};
-  const v={width:{ideal:res.w},height:{ideal:res.h}};if(S.camId)v.deviceId={exact:S.camId};
+  const v={width:{ideal:res.w},height:{ideal:res.h}};if(S.camId)v.deviceId={exact:S.camId};else v.facingMode={ideal:'user'};
   try{
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('no api');
     stream=await navigator.mediaDevices.getUserMedia({video:v,audio:false});

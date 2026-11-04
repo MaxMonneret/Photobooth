@@ -4,9 +4,15 @@
 <meta charset="utf-8">
 <title>Photobooth</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<script>/* Verrou de domaine : le photobooth ne démarre que sur les adresses autorisées (à adapter si vous changez d'hébergement). */
+(function(){var ok=['maxmonneret.github.io','localhost','127.0.0.1',''];if(location.protocol!=='file:'&&ok.indexOf(location.hostname)<0){document.documentElement.innerHTML='<body style="font:16px sans-serif;padding:2em">Photobooth &copy; Max Monneret. Utilisation non autoris&eacute;e sur ce site.</body>';window.stop()}})();</script>
 <!--
 ================================================================================
  PHOTOBOOTH DE SOIRÉE  —  un seul fichier, aucune installation
+ © 2026 Max Monneret. Tous droits réservés. Reproduction, copie, modification ou
+ réutilisation interdites sans autorisation écrite de l'auteur.
 ================================================================================
  OUVRIR
    Double-clic sur ce fichier (Chrome ou Edge). Autorisez la caméra.
@@ -309,6 +315,7 @@ html,body{height:100vh;height:100dvh}
     <h1 class="title" style="font-size:clamp(1.8rem,5vmin,4rem)">C'est dans la boîte</h1>
     <button class="btn" id="btnPrint">Imprimer</button>
     <button class="btn" id="btnDl">Télécharger</button>
+    <button class="btn" id="btnShare" style="display:none">Partager</button>
     <button class="btn ghost" id="btnAgain">Recommencer</button>
     <div id="resIdle"></div>
   </div>
@@ -341,7 +348,7 @@ const KEY='photobooth_settings_v1';
 const BUILTIN_FRAMES=['gallery','film','editorial','gold','polaroid','chrome','neon','lufkin','blueprint'];
 const FILTER_IDS=['none','bw','vintage','pop','warm','cool'];
 const DEFAULTS={
-  name:'Notre soirée', date:new Date().toISOString().slice(0,10), theme:'noir', message:'Merci d\'être venus !', sound:true, pin:'1234',
+  name:'Notre soirée', date:new Date().toISOString().slice(0,10), theme:'noir', message:'Merci d\'être venus !', sound:true, pin:'', pinHash:'', pinSalt:'', pinLen:4,
   modes:{single:true,strip:true,gif:true},
   frames:{gallery:true,film:true,editorial:true,gold:true,polaroid:true,chrome:true,neon:true,lufkin:true,blueprint:true},
   filters:{none:true,bw:true,vintage:true,pop:true,warm:true,cool:true},
@@ -354,6 +361,13 @@ const deepMerge=(d,s)=>{const o=Array.isArray(d)?[...d]:{...d};if(s&&typeof s===
 let S;
 try{S=deepMerge(DEFAULTS,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){S=deepMerge(DEFAULTS,{})}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+/* Code PIN : stocké sous forme de hash salé (SHA-256), jamais en clair. Verrou 30 s après 5 erreurs. */
+const hex=a=>[...new Uint8Array(a)].map(x=>x.toString(16).padStart(2,'0')).join('');
+async function sha(t){return hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)))}
+async function setPin(v){S.pinSalt=hex(crypto.getRandomValues(new Uint8Array(12)));S.pinHash=await sha(S.pinSalt+':'+v);S.pinLen=v.length;S.pin='';save()}
+const pinReady=(async()=>{try{if(!S.pinHash)await setPin(S.pin||'1234')}catch(e){}})();
+let pinFails=0,pinLock=0;
+async function pinOk(v){await pinReady;if(Date.now()<pinLock)return false;if(!S.pinHash)return v===(S.pin||'1234');try{return await sha(S.pinSalt+':'+v)===S.pinHash}catch(e){return false}}
 const getP=(p)=>p.split('.').reduce((o,k)=>o&&o[k],S);
 const setP=(p,v)=>{const a=p.split('.');const l=a.pop();a.reduce((o,k)=>o[k],S)[l]=v;save()};
 const fmtDate=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}catch(e){return d||''}};
@@ -788,12 +802,16 @@ async function finalize(){
 /* --- résultat --- */
 function updateResButtons(){
   const p=$('#btnPrint'),ok=S.print.enabled&&state.guestPrints<S.print.max;
-  p.style.display=S.print.enabled?'':'none';p.disabled=!ok;
+  p.style.display=S.print.enabled?'':'none';p.disabled=!ok;$('#btnShare').style.display=canShareFile()?'':'none';
   p.textContent=ok?`Imprimer (${state.guestPrints}/${S.print.max})`:'Impressions terminées';
 }
 $('#btnDl').onclick=()=>{const r=state.result;if(!r)return;download(r.blob,`photobooth-${slug(S.name)}-${r.ts}.${r.type==='gif'?'gif':'jpg'}`);toast('Téléchargement lancé !')};
 $('#btnAgain').onclick=()=>{beep(700,.1,'triangle');if(enabledModes().length>1)go('mode');else{state.mode=enabledModes()[0]||'single';go('style')}};
 $('#btnPrint').onclick=()=>doPrint();
+/* Partage natif (téléphone/tablette) : SMS, WhatsApp, e-mail, AirDrop... via le menu du système */
+function shareFile(){const r=state.result;if(!r)return null;return new File([r.blob],`photo-${slug(S.name)}-${r.ts}.${r.type==='gif'?'gif':'jpg'}`,{type:r.blob.type||(r.type==='gif'?'image/gif':'image/jpeg')})}
+function canShareFile(){try{const f=shareFile();return !!(f&&navigator.share&&navigator.canShare&&navigator.canShare({files:[f]}))}catch(e){return false}}
+$('#btnShare').onclick=async()=>{try{await navigator.share({files:[shareFile()],title:S.name,text:S.message})}catch(e){if(e&&e.name!=='AbortError')toast('Partage impossible : utilisez Télécharger.')}};
 
 /* --- retour automatique --- */
 setInterval(()=>{
@@ -824,14 +842,14 @@ let pinBuf='',pinTimer=null;
   const pad=$('#pinPad'),keys=['1','2','3','4','5','6','7','8','9','✕','0','⌫'];
   keys.forEach(k=>{const b=document.createElement('button');b.textContent=k;b.onclick=()=>pinKey(k);pad.appendChild(b)});
 })();
-function pinDots(){const d=$('#pinDots');d.innerHTML='';for(let i=0;i<Math.max(4,S.pin.length);i++){const e=document.createElement('i');if(i<pinBuf.length)e.className='f';d.appendChild(e)}}
+function pinDots(){const d=$('#pinDots');d.innerHTML='';for(let i=0;i<Math.max(4,S.pinLen||4);i++){const e=document.createElement('i');if(i<pinBuf.length)e.className='f';d.appendChild(e)}}
 function openPin(){pinBuf='';pinDots();$('#pin').classList.add('on')}
-function pinKey(k){
+async function pinKey(k){
   if(k==='✕'){$('#pin').classList.remove('on');return}
   if(k==='⌫')pinBuf=pinBuf.slice(0,-1);else if(pinBuf.length<8)pinBuf+=k;
   pinDots();
-  if(pinBuf===S.pin){$('#pin').classList.remove('on');openAdmin()}
-  else if(pinBuf.length>=S.pin.length){const b=$('.pinbox');b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');pinBuf='';setTimeout(pinDots,300)}
+  if(pinBuf.length>=(S.pinLen||4)&&await pinOk(pinBuf)){pinFails=0;$('#pin').classList.remove('on');openAdmin()}
+  else if(pinBuf.length>=(S.pinLen||4)){if(Date.now()<pinLock)toast('Trop d\'essais : patientez un instant.');else if(++pinFails>=5){pinFails=0;pinLock=Date.now()+30000;toast('Trop d\'essais : accès bloqué 30 secondes.')}const b=$('.pinbox');b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');pinBuf='';setTimeout(pinDots,300)}
 }
 const hot=$('#hot');
 hot.addEventListener('pointerdown',()=>{clearTimeout(pinTimer);pinTimer=setTimeout(openPin,1600)});
@@ -862,8 +880,8 @@ function tGeneral(b){
   Object.entries(THEMES).forEach(([id,t])=>{const x=document.createElement('button');x.className='tab'+(S.theme===id?' on':'');x.textContent=t.label;x.onclick=()=>{applyTheme(id);$$('button',tb).forEach(y=>y.classList.toggle('on',y===x))};tb.appendChild(x)});
   b.append(field('Thème',tb),field('Sons (bips, déclencheur)',tgl(()=>S.sound,v=>S.sound=v,refreshHome)));
   const pin=document.createElement('input');pin.type='password';pin.inputMode='numeric';pin.placeholder='4 à 8 chiffres';pin.style.width='14ch';
-  const ok=document.createElement('button');ok.className='mini';ok.textContent='Changer';ok.onclick=()=>{if(/^\d{4,8}$/.test(pin.value)){S.pin=pin.value;save();pin.value='';toast('Code PIN modifié.')}else toast('Le code doit contenir 4 à 8 chiffres.')};
-  const w=document.createElement('div');w.className='num';w.append(pin,ok);b.append(field('Code PIN',w,'Actuel : '+'•'.repeat(S.pin.length)));
+  const ok=document.createElement('button');ok.className='mini';ok.textContent='Changer';ok.onclick=()=>{if(/^\d{4,8}$/.test(pin.value)){setPin(pin.value).then(()=>{pin.value='';toast('Code PIN modifié.')})}else toast('Le code doit contenir 4 à 8 chiffres.')};
+  const w=document.createElement('div');w.className='num';w.append(pin,ok);b.append(field('Code PIN',w,'Actuel : '+'•'.repeat(S.pinLen||4)));
   const fs=document.createElement('button');fs.className='mini';fs.textContent='Plein écran';fs.onclick=()=>{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen().catch(()=>{})};
   const dm=document.createElement('button');dm.className='mini';dm.textContent='Lancer la visite';dm.onclick=()=>{setDemo(true,true);startTour()};
   const w2=document.createElement('div');w2.className='num';w2.append(fs,dm);b.append(field('Affichage et démo',w2,'La visite guidée présente toutes les fonctions.'));

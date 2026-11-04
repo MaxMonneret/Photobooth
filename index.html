@@ -502,27 +502,77 @@ async function startCamera(){
   video.srcObject=stream;try{await video.play()}catch(e){}camOK=true;return true;
 }
 function stopCamera(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;camOK=false}
-/* Silhouettes élégantes éclairées par une lumière de contour aux couleurs du thème */
-function person(x,y,sc,col,skin,ph,t){
-  const bob=Math.sin(t*1.4+ph)*5*sc,sway=Math.sin(t*.7+ph)*.025;
-  fx.save();fx.translate(x,y+bob);fx.rotate(sway);fx.scale(sc,sc);
-  const body=new Path2D();body.moveTo(-26,52);body.lineTo(-26,96);body.bezierCurveTo(-90,108,-175,125,-190,235);body.lineTo(-190,760);body.lineTo(190,760);body.lineTo(190,235);body.bezierCurveTo(175,125,90,108,26,96);body.lineTo(26,52);body.closePath();
-  const head=new Path2D();head.ellipse(0,0,52,64,0,0,Math.PI*2);
-  const g=fx.createLinearGradient(0,-70,0,500);g.addColorStop(0,'rgba(6,8,12,.96)');g.addColorStop(1,'rgba(14,18,26,.98)');
-  fx.fillStyle=g;fx.fill(body);fx.fill(head);
-  fx.shadowColor=col;fx.shadowBlur=26;fx.strokeStyle=col;fx.lineWidth=3.5;fx.stroke(head);fx.stroke(body);
-  fx.shadowBlur=0;fx.globalAlpha=.35;fx.lineWidth=1.5;fx.strokeStyle='#fff';fx.stroke(head);
+/* Scène de démo : station de ski stylisée, personnages dessinés en code (style illustration à plat) */
+const PANTS='#141a26',SKIN=['#f0c7a0','#c98a5e','#8d5a3b'];
+function limb(p,w,col){fx.strokeStyle=col;fx.lineWidth=w;fx.lineCap='round';fx.lineJoin='round';fx.beginPath();fx.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)fx.lineTo(p[i],p[i+1]);fx.stroke()}
+function headSide(x,y,r,skin,hat,gog){
+  fx.fillStyle=skin;fx.beginPath();fx.arc(x,y,r,0,7);fx.fill();
+  fx.fillStyle=hat;fx.beginPath();fx.arc(x-1,y,r+2.5,Math.PI,0);fx.closePath();fx.fill();
+  fx.fillStyle=hat;fx.beginPath();fx.roundRect(x-r-2.5,y-2,r*2+5,5,2);fx.fill();
+  const g=fx.createLinearGradient(x,y-r*.4,x+r,y+r*.3);g.addColorStop(0,gog);g.addColorStop(1,'#ffffff');fx.fillStyle=g;fx.beginPath();fx.roundRect(x+r*.05,y-r*.38,r*.95,r*.62,5);fx.fill();
+  fx.strokeStyle='#0b0d12';fx.lineWidth=2;fx.beginPath();fx.moveTo(x-r,y-r*.1);fx.lineTo(x+r*.05,y-r*.1);fx.stroke();
+}
+function skier(x,y,ang,t){
+  fx.save();fx.translate(x,y);fx.rotate(ang);const bob=Math.sin(t*7)*2.5,jk=T.c1;
+  limb([-74,0,70,0,86,-8],7,T.c3);
+  limb([-14,-58+bob,8,-32,-10,-7],16,PANTS);limb([-2,-60+bob,24,-34,10,-7],16,PANTS);
+  limb([-4,-62+bob,26,-102+bob],36,jk);
+  limb([24,-98+bob,44,-80,64,-70],13,jk);limb([62,-70,16,2],3,'#d7e0ea');
+  limb([18,-96+bob,36,-76,52,-64],12,PANTS==='' ?jk:T.c2);limb([50,-64,6,2],3,'#d7e0ea');
+  headSide(36,-122+bob,15,SKIN[0],T.c2,T.c3);
+  fx.restore();
+}
+function boarder(x,y,rot,t){
+  fx.save();fx.translate(x,y);fx.rotate(rot);const jk=T.c2;
+  limb([-60,0,60,0],10,T.c3);limb([-22,0,22,0],3,'#ffffff');
+  limb([-4,-52,-26,-30,-22,-6],15,PANTS);limb([6,-52,26,-30,22,-6],15,PANTS);
+  limb([0,-52,3,-100],34,jk);
+  limb([-8,-94,-42,-110,-70,-130],12,jk);limb([10,-92,46,-86,74,-74],12,jk);
+  fx.fillStyle=PANTS;fx.beginPath();fx.arc(-70,-130,7,0,7);fx.arc(74,-74,7,0,7);fx.fill();
+  headSide(4,-120,15,SKIN[1],T.c1,T.c3);
+  fx.restore();
+}
+function poser(x,y,t){
+  fx.save();fx.translate(x,y);const w=Math.sin(t*5);
+  limb([-14,-84,-14,-8],20,PANTS);limb([14,-84,14,-8],20,PANTS);limb([-14,-4,-30,-4],16,'#0b0d12');limb([14,-4,30,-4],16,'#0b0d12');
+  fx.fillStyle=T.c3;fx.beginPath();fx.roundRect(-40,-176,80,104,24);fx.fill();
+  limb([-34,-154,-50,-114,-46,-86],17,T.c3);limb([34,-154,64,-180,62+w*16,-216],17,T.c3);
+  fx.fillStyle=PANTS;fx.beginPath();fx.arc(-46,-82,9,0,7);fx.arc(62+w*16,-218,9,0,7);fx.fill();
+  fx.fillStyle=SKIN[2];fx.beginPath();fx.arc(0,-202,25,0,7);fx.fill();
+  fx.strokeStyle='#f4f1ea';fx.lineWidth=11;fx.beginPath();fx.arc(0,-202,29,Math.PI*.95,Math.PI*2.05);fx.stroke();
+  fx.fillStyle='#0b0d12';fx.beginPath();fx.roundRect(-19,-210,16,11,4);fx.roundRect(3,-210,16,11,4);fx.fill();fx.fillRect(-4,-208,8,3);
+  fx.fillStyle='rgba(255,255,255,.55)';fx.fillRect(-16,-208,5,2);fx.fillRect(6,-208,5,2);
+  fx.strokeStyle='#2a1a12';fx.lineWidth=3;fx.lineCap='round';fx.beginPath();fx.arc(0,-194,9,.25,Math.PI-.25);fx.stroke();
   fx.restore();
 }
 function drawFake(t){
-  t/=1000;const g=fx.createLinearGradient(0,0,1280,720);g.addColorStop(0,T.bg2);g.addColorStop(1,T.bg1);fx.fillStyle=g;fx.fillRect(0,0,1280,720);
-  const cols=[T.c1,T.c2,T.c3];
-  for(let i=0;i<26;i++){const x=(i*131+t*28*(1+i%3))%1340-30,y=(i*89+t*20*(1+i%2))%780-30,r=16+(i%5)*10,gr=fx.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,cols[i%3]+'88');gr.addColorStop(1,cols[i%3]+'00');fx.fillStyle=gr;fx.beginPath();fx.arc(x,y,r,0,7);fx.fill()}
-  const sp=fx.createRadialGradient(640,120,40,640,240,520);sp.addColorStop(0,cols[1]+'40');sp.addColorStop(1,cols[1]+'00');fx.fillStyle=sp;fx.fillRect(0,0,1280,720);
-  person(300+Math.sin(t*.6)*30,250,1.0,cols[0],'',0,t);
-  person(980-Math.sin(t*.6)*30,262,1.05,cols[2],'',4,t);
-  person(640,215,1.25,cols[1],'',2,t);
-  fx.fillStyle=T.text;fx.globalAlpha=.7;fx.font='700 28px system-ui,sans-serif';fx.textAlign='left';fx.fillText('CAMÉRA DE DÉMONSTRATION',30,48);fx.globalAlpha=1;
+  t/=1000;const cols=[T.c1,T.c2,T.c3],sy=x=>430+x*.164,ang=Math.atan(.164);
+  const g=fx.createLinearGradient(0,0,0,720);g.addColorStop(0,T.bg1);g.addColorStop(1,T.bg2);fx.fillStyle=g;fx.fillRect(0,0,1280,720);
+  const sun=fx.createRadialGradient(930,170,10,930,170,300);sun.addColorStop(0,T.c2+'88');sun.addColorStop(1,T.c2+'00');fx.fillStyle=sun;fx.fillRect(0,0,1280,720);
+  fx.fillStyle=T.c2+'cc';fx.beginPath();fx.arc(930,170,44,0,7);fx.fill();
+  const peaks=(pts,c0,c1,snow)=>{const gr=fx.createLinearGradient(0,200,0,640);gr.addColorStop(0,c0);gr.addColorStop(1,c1);fx.fillStyle=gr;fx.beginPath();fx.moveTo(pts[0][0],pts[0][1]);pts.forEach(p=>fx.lineTo(p[0],p[1]));fx.closePath();fx.fill();
+    if(snow){fx.fillStyle='rgba(255,255,255,.75)';for(let i=1;i<pts.length-2;i++){const p=pts[i];if(p[1]<pts[i-1][1]&&p[1]<pts[i+1][1]){fx.beginPath();fx.moveTo(p[0],p[1]);fx.lineTo(p[0]-34,p[1]+46);fx.lineTo(p[0]-12,p[1]+38);fx.lineTo(p[0],p[1]+52);fx.lineTo(p[0]+14,p[1]+38);fx.lineTo(p[0]+36,p[1]+48);fx.closePath();fx.fill()}}}};
+  peaks([[0,430],[110,300],[230,380],[380,220],[520,370],[670,270],[810,360],[940,230],[1100,340],[1280,280],[1280,720],[0,720]],T.c2+'99',T.bg2,true);
+  peaks([[0,520],[200,410],[360,480],[560,370],[760,480],[980,390],[1180,460],[1280,430],[1280,720],[0,720]],T.c1+'66',T.bg1,false);
+  /* télécabine */
+  fx.strokeStyle='rgba(255,255,255,.4)';fx.lineWidth=2;fx.beginPath();fx.moveTo(0,70);fx.lineTo(1280,150);fx.stroke();
+  const u=(t*.035)%1,cx=u*1280,cyy=70+u*80;fx.strokeStyle='rgba(255,255,255,.6)';fx.beginPath();fx.moveTo(cx,cyy);fx.lineTo(cx,cyy+26);fx.stroke();
+  fx.fillStyle=T.c1;fx.beginPath();fx.roundRect(cx-26,cyy+26,52,36,8);fx.fill();fx.fillStyle='rgba(255,255,255,.8)';fx.fillRect(cx-19,cyy+33,38,15);
+  /* pente */
+  const sg=fx.createLinearGradient(0,430,0,720);sg.addColorStop(0,'#f4f8fb');sg.addColorStop(1,'#bfd0de');fx.fillStyle=sg;fx.beginPath();fx.moveTo(0,sy(0));fx.lineTo(1280,sy(1280));fx.lineTo(1280,720);fx.lineTo(0,720);fx.closePath();fx.fill();
+  fx.fillStyle=T.c2+'26';fx.fill();
+  fx.strokeStyle='rgba(120,150,175,.35)';fx.lineWidth=3;for(let i=0;i<4;i++){fx.beginPath();fx.moveTo(0,sy(0)+60+i*52);fx.lineTo(1280,sy(1280)+60+i*52);fx.stroke()}
+  /* personnages */
+  poser(190,560,t);
+  const sx=((t*170)%1560)-140;
+  for(let k=1;k<=9;k++){fx.fillStyle='rgba(255,255,255,'+(.8-k*.08)+')';fx.beginPath();fx.arc(sx-60-k*16,sy(sx)+40-Math.abs(Math.sin(t*9+k))*10*k/3,3+k*.9,0,7);fx.fill()}
+  skier(sx,sy(sx)+44,ang,t);
+  const j=(t*.2)%1,air=4*j*(1-j),bx=620+j*620;
+  boarder(bx,sy(bx)+78-air*230,ang*(1-air)+(.5-j)*.9*air,t);
+  /* neige qui tombe */
+  fx.fillStyle='rgba(255,255,255,.85)';for(let i=0;i<70;i++){const x=(i*97+Math.sin(t*.6+i)*30)%1300,y=(i*53+t*(40+i%5*14))%760;fx.beginPath();fx.arc(x,y,1.2+i%3*.8,0,7);fx.fill()}
+  const vg=fx.createRadialGradient(640,360,260,640,360,780);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.45)');fx.fillStyle=vg;fx.fillRect(0,0,1280,720);
+  fx.fillStyle='#fff';fx.globalAlpha=.75;fx.font='700 26px system-ui,sans-serif';fx.textAlign='left';fx.fillText('CAMÉRA DE DÉMONSTRATION',30,46);fx.globalAlpha=1;
 }
 function setDemo(on,quiet){
   demo=on;$('#demoBar').classList.toggle('on',on);

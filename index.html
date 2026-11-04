@@ -352,7 +352,7 @@ const BUILTIN_FRAMES=['gallery','film','editorial','gold','polaroid','chrome','n
 const FILTER_IDS=['none','bw','vintage','pop','warm','cool','duo','soft','indus'];
 const DEFAULTS={
   name:'Notre soirée', date:new Date().toISOString().slice(0,10), theme:'gears', themeV:0, message:'Merci d\'être venus !', sound:true, pin:'', pinHash:'', pinSalt:'', pinLen:4,
-  modes:{single:true,strip:true,gif:true},
+  modes:{single:true,strip:true,gif:true,collage:true,popart:true,duo:true},
   frames:{gallery:true,film:true,editorial:true,gold:true,polaroid:true,chrome:true,neon:true,lufkin:true,blueprint:true,trophee:true,gearsclair:true,theme:true},
   filters:{none:true,bw:true,vintage:true,pop:true,warm:true,cool:true,duo:true,soft:true,indus:true},
   countdown:3, stripCount:4, idle:30,
@@ -620,6 +620,7 @@ function layoutFor(mode,n,full){
     const rects=[];for(let i=0;i<n;i++)rects.push({x:m,y:m+i*(ph+gap),w:W-2*m,h:ph});
     return {W,H,rects,foot:{x:0,y:H-foot,w:W,h:foot},deco:.45,strip:true};
   }
+  if(mode==='collage'||mode==='popart'||mode==='duo'){const cs=2,rs=mode==='duo'?1:2,x0=full?0:60,y0=full?0:60,aw=full?1800:1680,ah=full?1040:980,g=full?10:20,cw=(aw-g*(cs-1))/cs,ch=(ah-g*(rs-1))/rs,rects=[];for(let r=0;r<rs;r++)for(let c=0;c<cs;c++)rects.push({x:x0+c*(cw+g),y:y0+r*(ch+g),w:cw,h:ch});return {W:1800,H:1200,rects,foot:{x:0,y:1040,w:1800,h:160},deco:1}}
   if(full)return {W:1800,H:1200,rects:[{x:0,y:0,w:1800,h:1200}],foot:{x:0,y:1040,w:1800,h:160},deco:1};
   return {W:1800,H:1200,rects:[{x:60,y:60,w:1680,h:980}],foot:{x:0,y:1040,w:1800,h:160},deco:1};
 }
@@ -743,7 +744,7 @@ function layerFor(frameId,mode,n,scale){
 
 /* ====================== 10. COMPOSITION DES IMAGES ====================== */
 function composeFinal(grabs,mode,frameId,scale){
-  const n=mode==='strip'?grabs.length:1,L=layoutFor(mode,n,isCustom(frameId));
+  const n=cellsOf(mode,grabs.length),L=layoutFor(mode,n,isCustom(frameId));
   const cv=document.createElement('canvas');cv.width=Math.round(L.W*scale);cv.height=Math.round(L.H*scale);
   const c=cv.getContext('2d'),sx=cv.width/L.W,sy=cv.height/L.H;c.fillStyle=T.paper;c.fillRect(0,0,cv.width,cv.height);
   L.rects.forEach((r,i)=>c.drawImage(grabs[i],r.x*sx,r.y*sy,r.w*sx,r.h*sy));
@@ -847,7 +848,7 @@ function slideTick(){
   const nxt=imgs[slideI%2];const prev=imgs[(slideI+1)%2];nxt.src=slideUrls[slideI%slideUrls.length];nxt.classList.add('on');prev.classList.remove('on');slideI++;
 }
 function onHome(){state.result=null;refreshHome();loadSlides();clearInterval(slideTimer);slideTimer=setInterval(slideTick,3500);setTimeout(slideTick,300)}
-function enabledModes(){return ['single','strip','gif'].filter(m=>S.modes[m])}
+function enabledModes(){return ALLMODES.filter(m=>S.modes[m])}
 $('#s-home').addEventListener('click',e=>{
   if(e.target.closest('.corner'))return;audio();beep(660,.1,'triangle');
   if(!demo&&!camOK){setDemo(true);}
@@ -864,9 +865,15 @@ $('#demoQuit').onclick=()=>{
 };
 
 /* --- choix du mode --- */
+const ALLMODES=['single','strip','gif','collage','popart','duo'];
+const POPF=['saturate(2.4) contrast(1.25)','hue-rotate(90deg) saturate(2.6) contrast(1.25)','hue-rotate(200deg) saturate(2.6) contrast(1.25)','grayscale(1) sepia(1) hue-rotate(-30deg) saturate(4) contrast(1.3)'];
+const cellsOf=(mode,n)=>mode==='strip'?n:(mode==='collage'||mode==='popart')?4:mode==='duo'?2:1;
 const MODE_INFO={
   single:{t:'Photo',d:'Une belle photo',svg:'<rect x="6" y="14" width="52" height="38" rx="6"/><circle cx="32" cy="33" r="10"/><path d="M22 14l4-6h12l4 6"/>'},
   strip:{t:'Photomaton',d:'Bande de photos',svg:'<rect x="18" y="4" width="28" height="12" rx="2"/><rect x="18" y="18" width="28" height="12" rx="2"/><rect x="18" y="32" width="28" height="12" rx="2"/><rect x="18" y="46" width="28" height="12" rx="2"/>'},
+  collage:{t:'Collage',d:'4 photos en mosaïque',svg:'<rect x="8" y="8" width="22" height="22" rx="3"/><rect x="34" y="8" width="22" height="22" rx="3"/><rect x="8" y="34" width="22" height="22" rx="3"/><rect x="34" y="34" width="22" height="22" rx="3"/>'},
+  popart:{t:'Pop Art',d:'1 photo, 4 couleurs',svg:'<rect x="8" y="8" width="22" height="22" rx="3"/><rect x="34" y="8" width="22" height="22" rx="3"/><rect x="8" y="34" width="22" height="22" rx="3"/><rect x="34" y="34" width="22" height="22" rx="3"/><circle cx="19" cy="19" r="5"/><circle cx="45" cy="19" r="5"/><circle cx="19" cy="45" r="5"/><circle cx="45" cy="45" r="5"/>'},
+  duo:{t:'Duo',d:'2 photos côte à côte',svg:'<rect x="6" y="12" width="24" height="40" rx="3"/><rect x="34" y="12" width="24" height="40" rx="3"/>'},
   gif:{t:'GIF animé',d:'Boomerang qui bouge',svg:'<path d="M50 24a20 20 0 0 0-36-4M14 40a20 20 0 0 0 36 4"/><path d="M14 8v12h12M50 56V44H38"/>'}
 };
 function onMode(){
@@ -877,7 +884,7 @@ function onMode(){
 }
 
 /* --- cadre et filtre --- */
-const nCells=()=>state.mode==='strip'?S.stripCount:1;
+const nCells=()=>cellsOf(state.mode,S.stripCount);
 function activeFrames(){const l=[...BUILTIN_FRAMES,...customList.map(c=>c.id)].filter(id=>S.frames[id]!==false&&(BUILTIN_FRAMES.includes(id)||customImgs[id]));return l.length?l:['gallery']}
 function activeFilters(){const l=FILTER_IDS.filter(f=>S.filters[f]);return l.length?l:['none']}
 function onStyle(){
@@ -897,7 +904,7 @@ function drawPreview(cv,done){
   c.fillStyle=T.paper;c.fillRect(0,0,cv.width,cv.height);
   L.rects.forEach((r,i)=>{const x=r.x*sc,y=r.y*sc,w=r.w*sc,h=r.h*sc;
     if(done&&done[i])c.drawImage(done[i],x,y,w,h);
-    else{c.filter=FILTERS[state.filter];drawCover(c,cam.el,cam.w,cam.h,x,y,w,h,S.mirror);c.filter='none'}});
+    else{c.filter=state.mode==='popart'?((FILTERS[state.filter]==='none'?'':FILTERS[state.filter]+' ')+POPF[i%4]):FILTERS[state.filter];drawCover(c,cam.el,cam.w,cam.h,x,y,w,h,S.mirror);c.filter='none'}});
   c.drawImage(layerFor(state.frame,state.mode,nCells(),sc),0,0,cv.width,cv.height);
 }
 async function countdown(sec){
@@ -908,7 +915,7 @@ async function countdown(sec){
 const POSES=['Grimace !','Sérieux comme un trophée','Câlin d\'équipe','Bras en l\'air !','Tournez comme un engrenage','Regard de champion','Clin d\'œil !','Le plus grand sourire','Pose de super-héros','Chuchotez un secret'];
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 async function runShoot(){
-  state.abort=false;state.grabs=[];const mode=state.mode,full=isCustom(state.frame),n=nCells();
+  state.abort=false;state.grabs=[];const mode=state.mode,full=isCustom(state.frame),n=nCells(),shots=mode==='popart'?1:n;
   const cv=$('#shootCv');cv.width=mode==='strip'?300:900;cv.height=mode==='strip'?900:600;
   const L=layoutFor(mode,n,full),msg=$('#shootMsg'),poses=shuffle(POSES);
   try{
@@ -918,13 +925,14 @@ async function runShoot(){
       for(let i=0;i<12;i++){if(state.abort)return abortShoot();frames.push(grabCell(r.w*sc,r.h*sc));beep(500+i*40,.04,'square',.08);await sleep(140)}
       flash();state.poster=grabCell(r.w,r.h);state.gifFrames=frames;
     }else{
-      for(let i=0;i<n;i++){
-        msg.textContent=n>1?`Photo ${i+1} sur ${n}  •  ${poses[i%poses.length]}`:'Souriez !';
+      for(let i=0;i<shots;i++){
+        msg.textContent=shots>1?`Photo ${i+1} sur ${shots}  •  ${poses[i%poses.length]}`:'Souriez !';
         if(!await countdown(i===0?S.countdown:Math.min(S.countdown,3)))return abortShoot();
         flash();const r=L.rects[i];state.grabs[i]=grabCell(r.w,r.h);confetti(innerWidth/2,innerHeight/2,50);
-        if(n>1&&i<n-1){msg.textContent='On enchaîne…';await sleep(1100)}
+        if(shots>1&&i<shots-1){msg.textContent='On enchaîne…';await sleep(1100)}
       }
     }
+    if(mode==='popart'){const g0=state.grabs[0];state.grabs=POPF.map(f=>{const c=document.createElement('canvas');c.width=g0.width;c.height=g0.height;const x=c.getContext('2d');x.filter=f;x.drawImage(g0,0,0);return c})}
     msg.textContent='Développement en cours…';await sleep(500);await finalize();
   }catch(e){console.error(e);toast('Oups, un problème est survenu.');go('home')}
 }
@@ -1041,7 +1049,7 @@ function tGeneral(b){
 }
 function tModes(b){
   section(b,'Modes actifs');
-  ['single','strip','gif'].forEach(m=>b.append(field(MODE_INFO[m].t+' — '+MODE_INFO[m].d,mapToggle('modes',m,()=>enabledModes()))));
+  ALLMODES.forEach(m=>b.append(field(MODE_INFO[m].t+' — '+MODE_INFO[m].d,mapToggle('modes',m,()=>enabledModes()))));
   section(b,'Cadres actifs');
   [...BUILTIN_FRAMES,...customList.map(c=>c.id)].forEach(id=>b.append(field(frameName(id),mapToggle('frames',id,()=>activeFrames().filter(x=>S.frames[x]!==false)))));
   section(b,'Filtres actifs');
